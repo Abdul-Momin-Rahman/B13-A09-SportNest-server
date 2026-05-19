@@ -2,10 +2,13 @@ const dns = require("node:dns");
 dns.setServers(["8.8.8.8", "8.8.4.4"]);
 
 const express = require('express');
+const cors = require('cors')
 const dotenv = require('dotenv')
 dotenv.config()
 
 const app = express();
+app.use(cors())
+app.use(express.json())
 
 const PORT = process.env.PORT;
 
@@ -23,21 +26,46 @@ const client = new MongoClient(uri, {
 
 async function run() {
     try {
-        
+
         await client.connect();
 
         const db = client.db("SportNest");
         const facilities = db.collection("Facilities");
 
-        app.get("/all-facilities", async(req,res)=> {
+        app.get("/all-facilities", async (req, res) => {
             const result = await facilities.find().toArray();
             res.json(result);
         })
-        
+
+        app.post('/add-facility', async (req, res) => {
+            const data = req.body;
+            // console.log(data)
+
+            const { name, type, email, location, price, capacity, description, image, slots } = data;
+
+            const facility = {
+                name,
+                facility_type: type,
+                location,
+                price_per_hour: price,
+                capacity,
+                available_slots: slots,
+                description,
+                owner_email: email,
+                booking_count: 0,
+                image_url : image
+
+            }
+
+            const result = await facilities.insertOne(facility)
+
+            res.json(result)
+        })
+
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
-        
+
         // await client.close();
     }
 }
