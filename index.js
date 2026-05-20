@@ -12,7 +12,7 @@ app.use(express.json())
 
 const PORT = process.env.PORT;
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = process.env.MONGODB_URI;
 
 const client = new MongoClient(uri, {
@@ -31,10 +31,19 @@ async function run() {
 
         const db = client.db("SportNest");
         const facilities = db.collection("Facilities");
+        const bookings = db.collection("Bookings")
 
         app.get("/all-facilities", async (req, res) => {
             const result = await facilities.find().toArray();
             res.json(result);
+        })
+
+        app.get('/all-facilities/:id', async (req, res) => {
+            const { id } = req.params
+
+            const result = await facilities.findOne({ _id: new ObjectId(id) })
+
+            res.json(result)
         })
 
         app.post('/add-facility', async (req, res) => {
@@ -47,18 +56,26 @@ async function run() {
                 name,
                 facility_type: type,
                 location,
-                price_per_hour: price,
-                capacity,
+                price_per_hour: Number(price),
+                capacity : Number(capacity),
                 available_slots: slots,
                 description,
                 owner_email: email,
                 booking_count: 0,
-                image_url : image
+                image_url: image
 
             }
 
             const result = await facilities.insertOne(facility)
 
+            res.json(result)
+        })
+
+        app.post('/all-facilities/:id', async(req ,res ) => {
+            const booking = req.body;
+            // console.log(data)
+
+            const result = await bookings.insertOne(booking)
             res.json(result)
         })
 
