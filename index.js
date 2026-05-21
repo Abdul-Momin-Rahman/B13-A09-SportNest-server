@@ -4,6 +4,8 @@ dns.setServers(["8.8.8.8", "8.8.4.4"]);
 const express = require('express');
 const cors = require('cors')
 const dotenv = require('dotenv')
+
+
 dotenv.config()
 
 const app = express();
@@ -46,13 +48,38 @@ async function run() {
             res.json(result)
         })
 
+        // app.get('/my-facilities', async ( req, res) => {
+        //     const session = await auth(req);
+
+        //     const userEmail = session?.user?.email;
+
+        //     const facilities = await db.collection('facilities').find({
+        //         owner_email : userEmail
+        //     }).toArray();
+
+
+        //     res.json(facilities)
+        // })
+
+
+        app.get('/my-bookings/:userId' , async(req,res) => {
+            const {userId } = req.params;
+            // console.log(userId)
+            const query = { userId : userId}
+            const result = await bookings.find(query).toArray();
+            res.send(result)
+
+            // console.log(result)
+        })
+
         app.post('/add-facility', async (req, res) => {
             const data = req.body;
             // console.log(data)
 
-            const { name, type, email, location, price, capacity, description, image, slots } = data;
+            const {userId, name, type, email, location, price, capacity, description, image, slots } = data;
 
             const facility = {
+                userId,
                 name,
                 facility_type: type,
                 location,
@@ -73,9 +100,17 @@ async function run() {
 
         app.post('/all-facilities/:id', async(req ,res ) => {
             const booking = req.body;
-            // console.log(data)
+            // console.log(booking)
 
             const result = await bookings.insertOne(booking)
+            res.json(result)
+        })
+
+
+        app.delete('/my-bookings/:bookingId', async(req, res)=> {
+            const {bookingId} = req.params;
+            const result = await bookings.deleteOne({_id : new ObjectId(bookingId)})
+
             res.json(result)
         })
 
