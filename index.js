@@ -15,6 +15,7 @@ app.use(express.json())
 const PORT = process.env.PORT;
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { createRemoteJWKSet, jwtVerify } = require("jose-cjs");
 const uri = process.env.MONGODB_URI;
 
 const client = new MongoClient(uri, {
@@ -24,6 +25,31 @@ const client = new MongoClient(uri, {
         deprecationErrors: true,
     }
 });
+
+const JWKS = createRemoteJWKSet(
+    new URL("http://localhost:3000/api/auth/jwks")
+)
+
+const verifyToken = async (req, res, next) => {
+    const authHeader = req?.headers.authorization
+    if (!authHeader) {
+        return res.status(401).json({ message: "Unauthorized" })
+    }
+    const token = authHeader.split(" ")[1]
+    if (!token) {
+        return res.status(401).json({ message: "Unauthorized" })
+    }
+
+
+    try {
+        const { payload } = await jwtVerify(token, JWKS)
+        console.log(payload)
+        next()
+    } catch (error) {
+        return res.status(403).json({message : "Forbidden"})
+    }
+    
+}
 
 
 async function run() {
@@ -40,7 +66,7 @@ async function run() {
             res.json(result);
         })
 
-        app.get('/all-facilities/:id', async (req, res) => {
+        app.get('/all-facilities/:id', verifyToken, async (req, res) => {
             const { id } = req.params
 
             const result = await facilities.findOne({ _id: new ObjectId(id) })
@@ -48,42 +74,29 @@ async function run() {
             res.json(result)
         })
 
-        // app.get('/my-facilities', async ( req, res) => {
-        //     const session = await auth(req);
 
-        //     const userEmail = session?.user?.email;
-
-        //     const facilities = await db.collection('facilities').find({
-        //         owner_email : userEmail
-        //     }).toArray();
-
-
-        //     res.json(facilities)
-        // })
-
-
-        app.get('/my-bookings/:userId' , async(req,res) => {
-            const {userId } = req.params;
+        app.get('/my-bookings/:userId', verifyToken, async (req, res) => {
+            const { userId } = req.params;
             // console.log(userId)
-            const query = { userId : userId}
+            const query = { userId: userId }
             const result = await bookings.find(query).toArray();
             res.send(result)
 
             // console.log(result)
         })
 
-        app.get('/my-facilities/:userId', async(req,res) => {
+        app.get('/my-facilities/:userId', verifyToken, async (req, res) => {
             const { userId } = req.params;
-            const query = { userId : userId}
+            const query = { userId: userId }
             const result = await facilities.find(query).toArray();
             res.send(result)
         })
 
-        app.post('/add-facility', async (req, res) => {
+        app.post('/add-facility', verifyToken, async (req, res) => {
             const data = req.body;
             // console.log(data)
 
-            const {userId, name, type, email, location, price, capacity, description, image, slots } = data;
+            const { userId, name, type, email, location, price, capacity, description, image, slots } = data;
 
             const facility = {
                 userId,
@@ -91,7 +104,7 @@ async function run() {
                 facility_type: type,
                 location,
                 price_per_hour: Number(price),
-                capacity : Number(capacity),
+                capacity: Number(capacity),
                 available_slots: slots,
                 description,
                 owner_email: email,
@@ -105,7 +118,7 @@ async function run() {
             res.json(result)
         })
 
-        app.post('/all-facilities/:id', async(req ,res ) => {
+        app.post('/all-facilities/:id',verifyToken, async (req, res) => {
             const booking = req.body;
             // console.log(booking)
 
@@ -114,19 +127,19 @@ async function run() {
         })
 
 
-        app.patch('/my-facilities/:facilityId', async(req,res)=> {
-            const {facilityId} = req.params;
+        app.patch('/my-facilities/:facilityId',verifyToken, async (req, res) => {
+            const { facilityId } = req.params;
 
-            const filter = {_id : new ObjectId(facilityId)}
+            const filter = { _id: new ObjectId(facilityId) }
 
             const modifiedFacility = req.body;
 
             const updateFacility = {
-                $set : {
-                    name : modifiedFacility.name,
-                    location : modifiedFacility.location,
-                    price_per_hour : modifiedFacility.price,
-                    capacity : modifiedFacility.capacity,
+                $set: {
+                    name: modifiedFacility.name,
+                    location: modifiedFacility.location,
+                    price_per_hour: modifiedFacility.price,
+                    capacity: modifiedFacility.capacity,
                 }
             }
 
@@ -136,17 +149,17 @@ async function run() {
         })
 
 
-        app.delete('/my-bookings/:bookingId', async(req, res)=> {
-            const {bookingId} = req.params;
-            const result = await bookings.deleteOne({_id : new ObjectId(bookingId)})
+        app.delete('/my-bookings/:bookingId',verifyToken, async (req, res) => {
+            const { bookingId } = req.params;
+            const result = await bookings.deleteOne({ _id: new ObjectId(bookingId) })
 
             res.json(result)
         })
 
-        app.delete('/my-facilities/:facilityId', async(req,res)=> {
-            const {facilityId} = req.params;
+        app.delete('/my-facilities/:facilityId',verifyToken, async (req, res) => {
+            const { facilityId } = req.params;
             console.log(facilityId)
-            const result = await facilities.deleteOne({_id : new ObjectId(facilityId)})
+            const result = await facilities.deleteOne({ _id: new ObjectId(facilityId) })
 
             res.json(result)
         })
