@@ -5,14 +5,18 @@ const express = require('express');
 const cors = require('cors')
 const dotenv = require('dotenv')
 
-
 dotenv.config()
+
 
 const app = express();
 app.use(cors())
 app.use(express.json())
 
+
+
 const PORT = process.env.PORT;
+
+
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const { createRemoteJWKSet, jwtVerify } = require("jose-cjs");
@@ -25,6 +29,7 @@ const client = new MongoClient(uri, {
         deprecationErrors: true,
     }
 });
+
 
 const JWKS = createRemoteJWKSet(
     new URL(`${process.env.CLIENT_URL}/api/auth/jwks`)
