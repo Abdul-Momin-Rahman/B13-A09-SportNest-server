@@ -72,6 +72,13 @@ async function run() {
             // console.log(result)
         })
 
+        app.get('/my-facilities/:userId', async(req,res) => {
+            const { userId } = req.params;
+            const query = { userId : userId}
+            const result = await facilities.find(query).toArray();
+            res.send(result)
+        })
+
         app.post('/add-facility', async (req, res) => {
             const data = req.body;
             // console.log(data)
@@ -107,9 +114,39 @@ async function run() {
         })
 
 
+        app.patch('/my-facilities/:facilityId', async(req,res)=> {
+            const {facilityId} = req.params;
+
+            const filter = {_id : new ObjectId(facilityId)}
+
+            const modifiedFacility = req.body;
+
+            const updateFacility = {
+                $set : {
+                    name : modifiedFacility.name,
+                    location : modifiedFacility.location,
+                    price_per_hour : modifiedFacility.price,
+                    capacity : modifiedFacility.capacity,
+                }
+            }
+
+            // console.log(updateFacility)
+            const result = await facilities.updateOne(filter, updateFacility)
+            res.send(result)
+        })
+
+
         app.delete('/my-bookings/:bookingId', async(req, res)=> {
             const {bookingId} = req.params;
             const result = await bookings.deleteOne({_id : new ObjectId(bookingId)})
+
+            res.json(result)
+        })
+
+        app.delete('/my-facilities/:facilityId', async(req,res)=> {
+            const {facilityId} = req.params;
+            console.log(facilityId)
+            const result = await facilities.deleteOne({_id : new ObjectId(facilityId)})
 
             res.json(result)
         })
