@@ -49,9 +49,9 @@ const verifyToken = async (req, res, next) => {
         console.log(payload)
         next()
     } catch (error) {
-        return res.status(403).json({message : "Forbidden"})
+        return res.status(403).json({ message: "Forbidden" })
     }
-    
+
 }
 
 
@@ -65,7 +65,32 @@ async function run() {
         const bookings = db.collection("Bookings")
 
         app.get("/all-facilities", async (req, res) => {
-            const result = await facilities.find().toArray();
+
+            // console.log(req.query)
+            const { search, sports } = req.query;
+
+            let query = {};
+
+            
+            if (search) {
+                query.name = {
+                    $regex: search,
+                    $options: "i"
+                };
+            }
+
+            
+            if (sports) {
+
+                const sportsArray = sports.split(",");
+
+                query.facility_type = {
+                    $in: sportsArray
+                };
+            }
+
+            const result = await facilities.find(query).toArray();
+
             res.json(result);
         })
 
@@ -121,7 +146,7 @@ async function run() {
             res.json(result)
         })
 
-        app.post('/all-facilities/:id',verifyToken, async (req, res) => {
+        app.post('/all-facilities/:id', verifyToken, async (req, res) => {
             const booking = req.body;
             // console.log(booking)
 
@@ -130,7 +155,7 @@ async function run() {
         })
 
 
-        app.patch('/my-facilities/:facilityId',verifyToken, async (req, res) => {
+        app.patch('/my-facilities/:facilityId', verifyToken, async (req, res) => {
             const { facilityId } = req.params;
 
             const filter = { _id: new ObjectId(facilityId) }
@@ -152,14 +177,14 @@ async function run() {
         })
 
 
-        app.delete('/my-bookings/:bookingId',verifyToken, async (req, res) => {
+        app.delete('/my-bookings/:bookingId', verifyToken, async (req, res) => {
             const { bookingId } = req.params;
             const result = await bookings.deleteOne({ _id: new ObjectId(bookingId) })
 
             res.json(result)
         })
 
-        app.delete('/my-facilities/:facilityId',verifyToken, async (req, res) => {
+        app.delete('/my-facilities/:facilityId', verifyToken, async (req, res) => {
             const { facilityId } = req.params;
             console.log(facilityId)
             const result = await facilities.deleteOne({ _id: new ObjectId(facilityId) })
